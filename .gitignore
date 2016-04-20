@@ -14,3 +14,16 @@ Publish
 /TestResults
 
 /tools/NuGet.exe
+
+/src/WebJobs.Script/*.exe
+/src/WebJobs.Script/*.xml
+/src/WebJobs.Script/*.dll
+/src/WebJobs.Script/*.config
+/src/WebJobs.Script/de/
+/src/WebJobs.Script/es/
+/src/WebJobs.Script/fr/
+/src/WebJobs.Script/ja/
+/src/WebJobs.Script/it/
+/src/WebJobs.Script/ko/
+/src/WebJobs.Script/ru/
+/src/WebJobs.Script/zh-*/

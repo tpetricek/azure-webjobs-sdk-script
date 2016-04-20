@@ -208,7 +208,6 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
 
                 WebHostSettings settings = new WebHostSettings
                 {
-                    IsSelfHost = true,
                     ScriptPath = Path.Combine(Environment.CurrentDirectory, @"..\..\..\..\sample"),
                     LogPath = Path.Combine(Path.GetTempPath(), @"Functions"),
                     SecretsPath = Path.Combine(Environment.CurrentDirectory, @"..\..\..\..\src\WebJobs.Script.WebHost\App_Data\Secrets")

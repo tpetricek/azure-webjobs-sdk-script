@@ -14,14 +14,16 @@ using Microsoft.CodeAnalysis.Scripting;
 
 namespace Microsoft.Azure.WebJobs.Script.Description
 {
-    internal sealed class CSharpFunctionDescriptionProvider : FunctionDescriptorProvider, IDisposable
+    internal class DotNetFunctionDescriptionProvider : FunctionDescriptorProvider, IDisposable
     {
+        private readonly IDotNetCompiler _compiler;
         private readonly FunctionAssemblyLoader _assemblyLoader;
 
-        public CSharpFunctionDescriptionProvider(ScriptHost host, ScriptHostConfiguration config)
+        public DotNetFunctionDescriptionProvider(ScriptHost host, ScriptHostConfiguration config, IDotNetCompiler compiler)
             : base(host, config)
         {
             _assemblyLoader = new FunctionAssemblyLoader(config.RootScriptPath);
+            _compiler = compiler;
         }
 
         public void Dispose()
@@ -37,6 +39,11 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             }
         }
 
+        protected override IFunctionInvoker CreateFunctionInvoker(string scriptFilePath, BindingMetadata triggerMetadata, FunctionMetadata functionMetadata, Collection<FunctionBinding> inputBindings, Collection<FunctionBinding> outputBindings)
+        {
+            return new DotNetFunctionInvoker(Host, functionMetadata, inputBindings, outputBindings, new FunctionEntryPointResolver(), _assemblyLoader, _compiler);
+        }
+
         public override bool TryCreate(FunctionMetadata functionMetadata, out FunctionDescriptor functionDescriptor)
         {
             if (functionMetadata == null)
@@ -46,17 +53,12 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
             functionDescriptor = null;
 
-            if (functionMetadata.ScriptType != ScriptType.CSharp)
+            if (functionMetadata.ScriptType != _compiler.ScriptType)
             {
                 return false;
             }
 
             return base.TryCreate(functionMetadata, out functionDescriptor);
-        }
-
-        protected override IFunctionInvoker CreateFunctionInvoker(string scriptFilePath, BindingMetadata triggerMetadata, FunctionMetadata functionMetadata, Collection<FunctionBinding> inputBindings, Collection<FunctionBinding> outputBindings)
-        {
-            return new CSharpFunctionInvoker(Host, functionMetadata, inputBindings, outputBindings, new FunctionEntryPointResolver(), _assemblyLoader);
         }
 
         protected override Collection<ParameterDescriptor> GetFunctionParameters(IFunctionInvoker functionInvoker, FunctionMetadata functionMetadata,
@@ -79,10 +81,10 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 throw new ArgumentNullException("methodAttributes");
             }
 
-            var csharpInvoker = functionInvoker as CSharpFunctionInvoker;
+            var csharpInvoker = functionInvoker as DotNetFunctionInvoker;
             if (csharpInvoker == null)
             {
-                throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "Expected invoker of type '{0}' but received '{1}'", typeof(CSharpFunctionInvoker).Name, functionInvoker.GetType().Name));
+                throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "Expected invoker of type '{0}' but received '{1}'", typeof(DotNetFunctionInvoker).Name, functionInvoker.GetType().Name));
             }
 
             try
@@ -101,7 +103,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                     {
                         descriptors.Add(CreateTriggerParameterDescriptor(parameter, triggerMetadata));
 
-                        if (triggerMetadata.Type == BindingType.HttpTrigger && 
+                        if (triggerMetadata.Type == BindingType.HttpTrigger &&
                             parameter.ParameterType != typeof(HttpRequestMessage))
                         {
                             addHttpRequestSystemParameter = true;
@@ -141,7 +143,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 // Add any additional common System parameters
                 // Add ExecutionContext to provide access to InvocationId, etc.
                 descriptors.Add(new ParameterDescriptor("context", typeof(ExecutionContext)));
-                
+
                 // If we have an HTTP trigger binding but we're not binding
                 // to the HttpRequestMessage, require it as a system parameter
                 if (addHttpRequestSystemParameter)

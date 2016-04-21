@@ -93,7 +93,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
         private static string GetBinDirectory(FunctionMetadata metadata)
         {
             string functionDirectory = Path.GetDirectoryName(metadata.Source);
-            return Path.Combine(Path.GetFullPath(functionDirectory), CSharpConstants.PrivateAssembliesFolderName);
+            return Path.Combine(Path.GetFullPath(functionDirectory), DotNetConstants.PrivateAssembliesFolderName);
         }
 
         public override bool Equals(object other)

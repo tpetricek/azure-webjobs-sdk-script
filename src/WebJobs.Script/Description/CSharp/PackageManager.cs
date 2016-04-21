@@ -34,7 +34,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
             try
             {
-                string projectPath = Path.Combine(Path.GetDirectoryName(_functionMetadata.Source), CSharpConstants.ProjectFileName);
+                string projectPath = Path.Combine(Path.GetDirectoryName(_functionMetadata.Source), DotNetConstants.ProjectFileName);
                 string nugetHome = GetNugetPackagesPath();
 
                 var startInfo = new ProcessStartInfo

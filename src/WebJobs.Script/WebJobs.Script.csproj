@@ -29,6 +29,7 @@
     <WarningLevel>4</WarningLevel>
     <DocumentationFile>
     </DocumentationFile>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -51,6 +52,14 @@
     </Reference>
     <Reference Include="EdgeJs, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Edge.js.5.9.1\lib\EdgeJs.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FSharp.Compiler.Service, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\FSharp.Compiler.Service.3.0.0.0\lib\net45\FSharp.Compiler.Service.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FSharp.Core, Version=4.4.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.ApiHub.Sdk">
@@ -261,6 +270,11 @@
     <Compile Include="Binding\QueueBinding.cs" />
     <Compile Include="Binding\ServiceBusBinding.cs" />
     <Compile Include="Binding\TableBinding.cs" />
+    <Compile Include="Description\CSharp\CSharpCompilation.cs" />
+    <Compile Include="Description\CSharp\DotNetFunctionDescriptionProvider.cs" />
+    <Compile Include="Description\CSharp\FSharpCompilation.cs" />
+    <Compile Include="Description\CSharp\FSharpCompiler.cs" />
+    <Compile Include="Description\CSharp\DotNetFunctionInvoker.cs" />
     <Compile Include="Description\CSharp\IFunctionMetadataResolver.cs" />
     <Compile Include="Diagnostics\CompositeTraceWriter.cs" />
     <Compile Include="Config\JobHostConfigurationBuilder.cs" />
@@ -271,12 +285,11 @@
     <Compile Include="Description\Binding\BindingMetadata.cs" />
     <Compile Include="Description\Binding\BindingType.cs" />
     <Compile Include="Description\Binding\BlobBindingMetadata.cs" />
-    <Compile Include="Description\CSharp\CSharpConstants.cs" />
-    <Compile Include="Description\CSharp\CSharpFunctionSignature.cs" />
+    <Compile Include="Description\CSharp\DotNetConstants.cs" />
+    <Compile Include="Description\CSharp\DotNetFunctionSignature.cs" />
     <Compile Include="Description\CSharp\FunctionAssemblyLoadContext.cs" />
     <Compile Include="Description\CSharp\FunctionAssemblyLoader.cs" />
-    <Compile Include="Description\CSharp\CSharpFunctionDescriptionProvider.cs" />
-    <Compile Include="Description\CSharp\CSharpFunctionInvoker.cs" />
+    <Compile Include="Description\CSharp\CSharpCompiler.cs" />
     <Compile Include="Description\CSharp\FunctionEntryPointResolver.cs" />
     <Compile Include="Description\CSharp\FunctionMetadataResolver.cs" />
     <Compile Include="Description\CSharp\FunctionValueLoader.cs" />

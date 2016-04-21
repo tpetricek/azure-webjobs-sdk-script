@@ -198,9 +198,10 @@ namespace Microsoft.Azure.WebJobs.Script
 
             List<FunctionDescriptorProvider> descriptionProviders = new List<FunctionDescriptorProvider>()
             {
-                new ScriptFunctionDescriptorProvider(this, ScriptConfig),
-                new NodeFunctionDescriptorProvider(this, ScriptConfig),
-                new CSharpFunctionDescriptionProvider(this, ScriptConfig)
+                //new ScriptFunctionDescriptorProvider(this, ScriptConfig),
+                //new NodeFunctionDescriptorProvider(this, ScriptConfig),
+                new DotNetFunctionDescriptionProvider(this, ScriptConfig, new CSharpCompiler()),
+                new DotNetFunctionDescriptionProvider(this, ScriptConfig, new FSharpCompiler())
             };
 
             // read all script functions and apply to JobHostConfiguration

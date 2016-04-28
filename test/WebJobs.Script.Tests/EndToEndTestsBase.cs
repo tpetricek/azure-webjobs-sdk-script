@@ -16,7 +16,7 @@ using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DocumentDB;
-using Microsoft.Azure.WebJobs.Extensions.EasyTables;
+using Microsoft.Azure.WebJobs.Extensions.MobileApps;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Azure.WebJobs.Script;
 using Microsoft.ServiceBus;
@@ -38,6 +38,41 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         protected TTestFixture Fixture { get; private set; }
+
+        protected async Task TableInputTest()
+        {
+            ClearFunctionLogs("TableIn");
+
+            var args = new Dictionary<string, object>()
+            {
+                { "input", "{ \"Region\": \"West\" }" }
+            };
+            await Fixture.Host.CallAsync("TableIn", args);
+
+            var logs = await GetFunctionLogsAsync("TableIn");
+            string result = logs.Where(p => p.Contains("Result:")).Single();
+            result = result.Substring(result.IndexOf('{'));
+
+            // verify singleton binding
+            JObject resultObject = JObject.Parse(result);
+            JObject single = (JObject)resultObject["single"];
+            Assert.Equal("AAA", (string)single["PartitionKey"]);
+            Assert.Equal("001", (string)single["RowKey"]);
+
+            // verify partition binding
+            JArray partition = (JArray)resultObject["partition"];
+            Assert.Equal(3, partition.Count);
+            foreach (var entity in partition)
+            {
+                Assert.Equal("BBB", (string)entity["PartitionKey"]);
+            }
+
+            // verify query binding
+            JArray query = (JArray)resultObject["query"];
+            Assert.Equal(2, query.Count);
+            Assert.Equal("003", (string)query[0]["RowKey"]);
+            Assert.Equal("004", (string)query[1]["RowKey"]);
+        }
 
         [Fact]
         public async Task QueueTriggerToBlobTest()
@@ -159,12 +194,12 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             }
         }
 
-        protected async Task EasyTablesTest(bool isCSharp = false)
+        protected async Task MobileTablesTest(bool isCSharp = false)
         {
-            // EasyTables needs the following environment vars:
+            // MobileApps needs the following environment vars:
             // "AzureWebJobsMobileAppUri" - the URI to the mobile app
 
-            // The Mobile App needs an anonymous 'Item' EasyTable
+            // The Mobile App needs an anonymous 'Item' table
 
             // First manually create an item. 
             string id = Guid.NewGuid().ToString();
@@ -172,13 +207,13 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             {
                 { "input",  id }
             };
-            await Fixture.Host.CallAsync("EasyTableOut", arguments);
-            var item = await WaitForEasyTableRecordAsync("Item", id);
+            await Fixture.Host.CallAsync("MobileTableOut", arguments);
+            var item = await WaitForMobileTableRecordAsync("Item", id);
 
             Assert.Equal(item["id"], id);
 
             // Now add that Id to a Queue
-            var queue = Fixture.GetNewQueue("easytables-input");
+            var queue = Fixture.GetNewQueue("mobiletables-input");
             await queue.AddMessageAsync(new CloudQueueMessage(id));
 
             // And wait for the text to be updated
@@ -188,30 +223,34 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             // https://github.com/Azure/azure-webjobs-sdk-script/issues/49
             var idToCheck = id + (isCSharp ? string.Empty : "-success");
             var textToCheck = isCSharp ? "This was updated!" : null;
-            await WaitForEasyTableRecordAsync("Item", idToCheck, textToCheck);
+            await WaitForMobileTableRecordAsync("Item", idToCheck, textToCheck);
         }
 
         protected async Task ApiHubTest()
         {
-            // ApiHub needs the following environment vars:
-            // "AzureWebJobsDropBox" - the connection string for drop box
-            // TODO: this environment variable will be removed once local file based implementation of ApiHub SDK is used,
+            // ApiHub for dropbox is enabled if the AzureWebJobsDropBox environment variable is set.           
+            // The format should be: Endpoint={endpoint};Scheme={scheme};AccessToken={accesstoken}
+            // or to use the local file system the format should be: UseLocalFileSystem=true;Path={path}
+            string apiHubConnectionString = Environment.GetEnvironmentVariable("AzureWebJobsDropBox");
+
+            if (string.IsNullOrEmpty(apiHubConnectionString))
+            {
+                throw new ApplicationException("Missing AzureWebJobsDropBox environment variable.");
+            }
 
             string testBlob = "teste2e";
             string apiHubFile = "teste2e/test.txt";
             var resultBlob = Fixture.TestContainer.GetBlockBlobReference(testBlob);
             resultBlob.DeleteIfExists();
 
-            var root = ItemFactory.Parse(Environment.GetEnvironmentVariable("AzureWebJobsDropBox"));
+            var root = ItemFactory.Parse(apiHubConnectionString);
             if (root.FileExists(apiHubFile))
             {
-                var file = await root.CreateFileAsync(apiHubFile);
-                // TODO: this will be removed once updated Api SDK is referenced.
-                await file.HandleId;
+                var file = await root.GetFileReferenceAsync(apiHubFile);
                 await file.DeleteAsync();
             }
 
-            // Test both writing and reading from ApiHub.
+            // Test both writing and reading from ApiHubFile.
             // First, manually invoke a function that has an output binding to write to Dropbox.
             string testData = Guid.NewGuid().ToString();
 
@@ -219,9 +258,9 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             {
                 { "input", testData },
             };
-            await Fixture.Host.CallAsync("ApiHubSender", arguments);
+            await Fixture.Host.CallAsync("ApiHubFileSender", arguments);
 
-            // Second, there's an ApiHub trigger which will write a blob. 
+            // Second, there's an ApiHubFile trigger which will write a blob. 
             // Once the blob is written, we know both sender & listener are working.
             // TODO: removing the BOM character from result.
             string result = (await TestHelpers.WaitForBlobAsync(resultBlob)).Remove(0, 1);
@@ -229,10 +268,10 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             Assert.Equal(testData, result);
         }
 
-        protected async Task<JToken> WaitForEasyTableRecordAsync(string tableName, string itemId, string textToMatch = null)
+        protected async Task<JToken> WaitForMobileTableRecordAsync(string tableName, string itemId, string textToMatch = null)
         {
             // Get the URI by creating a config.
-            var config = new EasyTablesConfiguration();
+            var config = new MobileAppsConfiguration();
             var client = new MobileServiceClient(config.MobileAppUri);
             JToken item = null;
             var table = client.GetTable(tableName);

@@ -30,8 +30,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
         public FileAccess Access { get; private set; }
 
-        public abstract bool HasBindingParameters { get; }
-
         public abstract Task BindAsync(BindingContext context);
 
         public abstract Collection<CustomAttributeBuilder> GetCustomAttributes();
@@ -100,9 +98,9 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
                         case BindingType.HttpTrigger:
                             bindings.Add(new HttpBinding(config, bindingMetadata, FileAccess.Read));
                             break;
-                        case BindingType.EasyTable:
-                            EasyTableBindingMetadata easyTableMetadata = (EasyTableBindingMetadata)bindingMetadata;
-                            bindings.Add(new EasyTableBinding(config, easyTableMetadata, fileAccess));
+                        case BindingType.MobileTable:
+                            MobileTableBindingMetadata mobileTableMetadata = (MobileTableBindingMetadata)bindingMetadata;
+                            bindings.Add(new MobileTableBinding(config, mobileTableMetadata, fileAccess));
                             break;
                         case BindingType.DocumentDB:
                             DocumentDBBindingMetadata docDBMetadata = (DocumentDBBindingMetadata)bindingMetadata;
@@ -112,8 +110,8 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
                             NotificationHubBindingMetadata notificationHubMetadata = (NotificationHubBindingMetadata)bindingMetadata;
                             bindings.Add(new NotificationHubBinding(config, notificationHubMetadata, fileAccess));
                             break;
-                        case BindingType.ApiHub:
-                        case BindingType.ApiHubTrigger:
+                        case BindingType.ApiHubFile:
+                        case BindingType.ApiHubFileTrigger:
                             ApiHubBindingMetadata apiHubBindingMetadata = (ApiHubBindingMetadata)bindingMetadata;
                             apiHubBindingMetadata.Key = Guid.NewGuid().ToString();
                             bindings.Add(new ApiHubBinding(config, apiHubBindingMetadata, fileAccess));

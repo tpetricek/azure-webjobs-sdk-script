@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See License.txt in the project root for license information.
 
 using System;
+using Microsoft.Azure.ApiHub;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace Microsoft.Azure.WebJobs.Script.Description
 {
@@ -11,8 +13,12 @@ namespace Microsoft.Azure.WebJobs.Script.Description
         [AllowNameResolution]
         public string Path { get; set; }
 
-        [JsonIgnore]
         public string Key { get; set; }
+
+        public int PollIntervalInSeconds { get; set; }
+
+        [JsonConverter(typeof(StringEnumConverter))]
+        public FileWatcherType FileWatcherType { get; set; }
 
         public override void ApplyToConfig(JobHostConfigurationBuilder configBuilder)
         {

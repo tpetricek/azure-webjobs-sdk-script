@@ -67,7 +67,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
             MethodInfo entryPointReference = entryPointResolver.GetFunctionEntryPoint(methods).Value;
 
-            // For F#, this currently creates a malformed signautre with fewer parameter symbols than parameter names.
+            // For F#, this currently creates a malformed signature with fewer parameter symbols than parameter names.
             // For validation we only need the parameter names. The implementation of DotNetFunctionSignature copes with the 
             // lists having different lengths.
             var signature = new DotNetFunctionSignature(entryPointReference.GetParameters().Select(x => x.Name).ToImmutableArray(), ImmutableArray<IParameterSymbol>.Empty);

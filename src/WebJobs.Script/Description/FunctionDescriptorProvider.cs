@@ -110,39 +110,10 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 throw new ArgumentNullException("methodAttributes");
             }
 
-            ParameterDescriptor triggerParameter = null;
-            switch (triggerMetadata.Type)
-            {
-                case BindingType.QueueTrigger:
-                    triggerParameter = ParseQueueTrigger((QueueBindingMetadata)triggerMetadata);
-                    break;
-                case BindingType.EventHubTrigger:
-                    triggerParameter = ParseEventHubTrigger((EventHubBindingMetadata)triggerMetadata);
-                    break;
-                case BindingType.BlobTrigger:
-                    triggerParameter = ParseBlobTrigger((BlobBindingMetadata)triggerMetadata, typeof(Stream));
-                    break;
-                case BindingType.ServiceBusTrigger:
-                    triggerParameter = ParseServiceBusTrigger((ServiceBusBindingMetadata)triggerMetadata);
-                    break;
-                case BindingType.TimerTrigger:
-                    triggerParameter = ParseTimerTrigger((TimerBindingMetadata)triggerMetadata, typeof(TimerInfo));
-                    break;
-                case BindingType.HttpTrigger:
-                    triggerParameter = ParseHttpTrigger((HttpTriggerBindingMetadata)triggerMetadata, typeof(HttpRequestMessage));
-                    break;
-                case BindingType.ManualTrigger:
-                    triggerParameter = ParseManualTrigger(triggerMetadata);
-                    break;
-                case BindingType.ApiHubTrigger:
-                    triggerParameter = ParseApiHubTrigger((ApiHubBindingMetadata)triggerMetadata, typeof(Stream));
-                    break;
-            }
-
             ApplyMethodLevelAttributes(functionMetadata, triggerMetadata, methodAttributes);
 
             Collection<ParameterDescriptor> parameters = new Collection<ParameterDescriptor>();
-            triggerParameter.IsTrigger = true;
+            ParameterDescriptor triggerParameter = CreateTriggerParameter(triggerMetadata);
             parameters.Add(triggerParameter);
 
             // Add a TraceWriter for logging
@@ -155,6 +126,42 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             parameters.Add(new ParameterDescriptor("context", typeof(ExecutionContext)));
 
             return parameters;
+        }
+
+        protected virtual ParameterDescriptor CreateTriggerParameter(BindingMetadata triggerMetadata, Type parameterType = null)
+        {
+            ParameterDescriptor triggerParameter = null;
+            switch (triggerMetadata.Type)
+            {
+                case BindingType.QueueTrigger:
+                    triggerParameter = ParseQueueTrigger((QueueBindingMetadata)triggerMetadata, parameterType ?? typeof(string));
+                    break;
+                case BindingType.EventHubTrigger:
+                    triggerParameter = ParseEventHubTrigger((EventHubBindingMetadata)triggerMetadata, parameterType ?? typeof(string));
+                    break;
+                case BindingType.BlobTrigger:
+                    triggerParameter = ParseBlobTrigger((BlobBindingMetadata)triggerMetadata, parameterType ?? typeof(Stream));
+                    break;
+                case BindingType.ServiceBusTrigger:
+                    triggerParameter = ParseServiceBusTrigger((ServiceBusBindingMetadata)triggerMetadata, parameterType ?? typeof(string));
+                    break;
+                case BindingType.TimerTrigger:
+                    triggerParameter = ParseTimerTrigger((TimerBindingMetadata)triggerMetadata, parameterType ?? typeof(TimerInfo));
+                    break;
+                case BindingType.HttpTrigger:
+                    triggerParameter = ParseHttpTrigger((HttpTriggerBindingMetadata)triggerMetadata, parameterType ?? typeof(HttpRequestMessage));
+                    break;
+                case BindingType.ManualTrigger:
+                    triggerParameter = ParseManualTrigger(triggerMetadata, parameterType ?? typeof(string));
+                    break;
+                case BindingType.ApiHubFileTrigger:
+                    triggerParameter = ParseApiHubFileTrigger((ApiHubBindingMetadata)triggerMetadata, parameterType ?? typeof(Stream));
+                    break;
+            }
+
+            triggerParameter.IsTrigger = true;
+
+            return triggerParameter;
         }
 
         protected static void ApplyMethodLevelAttributes(FunctionMetadata functionMetadata, BindingMetadata triggerMetadata, Collection<CustomAttributeBuilder> methodAttributes)
@@ -361,7 +368,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             return new ParameterDescriptor(trigger.Name, triggerParameterType);
         }
 
-        protected ParameterDescriptor ParseApiHubTrigger(ApiHubBindingMetadata trigger, Type triggerParameterType = null)
+        protected ParameterDescriptor ParseApiHubFileTrigger(ApiHubBindingMetadata trigger, Type triggerParameterType = null)
         {
             if (trigger == null)
             {
@@ -373,9 +380,10 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 triggerParameterType = typeof(string);
             }
 
-            ConstructorInfo ctorInfo = typeof(ApiHubFileTriggerAttribute).GetConstructor(new Type[] { typeof(string), typeof(string) });
+            ConstructorInfo ctorInfo = typeof(ApiHubFileTriggerAttribute).GetConstructor(new Type[] { typeof(string), typeof(string), typeof(ApiHub.FileWatcherType), typeof(int) });
 
-            CustomAttributeBuilder attributeBuilder = new CustomAttributeBuilder(ctorInfo, new object[] { trigger.Key, trigger.Path });
+            CustomAttributeBuilder attributeBuilder = new CustomAttributeBuilder(ctorInfo, new object[] { trigger.Key, trigger.Path, trigger.FileWatcherType, trigger.PollIntervalInSeconds });
+
             string parameterName = trigger.Name;
             var attributes = new Collection<CustomAttributeBuilder>
             {

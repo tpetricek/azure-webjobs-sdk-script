@@ -56,6 +56,8 @@ namespace Microsoft.Azure.WebJobs.Script.Description
         private readonly IFunctionEntryPointResolver _functionEntryPointResolver;
         private readonly IMetricsLogger _metrics;
         private readonly ReaderWriterLockSlim _functionValueLoaderLock = new ReaderWriterLockSlim();
+        // TODO:Get this from some context set in/by the host.
+        private bool _compileWithDebugOptmization = true;
 
         private DotNetFunctionSignature _functionSignature;
         private IFunctionMetadataResolver _metadataResolver;
@@ -425,11 +427,8 @@ namespace Microsoft.Azure.WebJobs.Script.Description
         private ICompilation GetScriptCompilation()
         {
             string code = GetFunctionSource();
-
-            // TODO:Get this from some context set in/by the host.
-            bool debug = true;
-
-            return _compiler.GetCompilation(code, _metadataResolver.FunctionScriptOptions, AssemblyLoader.Value, Metadata.Name, Path.GetFileName(Metadata.Source), debug);
+            
+            return _compiler.GetCompilation(code, _metadataResolver.FunctionScriptOptions, AssemblyLoader.Value, Metadata.Name, Path.GetFileName(Metadata.Source), _compileWithDebugOptmization);
         }
 
         private static object GetTaskResult(Task task)

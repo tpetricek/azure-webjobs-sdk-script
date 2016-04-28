@@ -46,6 +46,12 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
+        public async Task TableInput()
+        {
+            await TableInputTest();
+        }
+
+        [Fact]
         public async Task DocumentDB()
         {
             await DocumentDBTest();
@@ -58,9 +64,9 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
         }
 
         [Fact]
-        public async Task EasyTables()
+        public async Task MobileTables()
         {
-            await EasyTablesTest();
+            await MobileTablesTest();
         }
 
         [Fact]
@@ -218,6 +224,7 @@ namespace Microsoft.Azure.WebJobs.Script.Tests
             JObject resultObject = JObject.Parse(body);
             Assert.Equal((string)resultObject["reqBodyType"], "object");
             Assert.Equal((string)resultObject["reqBody"]["testData"], testData);
+            Assert.Equal((string)resultObject["bindingData"]["testData"], testData);
         }
 
         [Fact]

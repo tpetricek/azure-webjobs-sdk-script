@@ -5,13 +5,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Reflection.Emit;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Host.Bindings.Path;
 using Microsoft.Azure.WebJobs.Host.Bindings.Runtime;
 using Microsoft.Azure.WebJobs.Script.Description;
-using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -23,7 +21,7 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
     {
         private readonly BindingTemplate _partitionKeyBindingTemplate;
         private readonly BindingTemplate _rowKeyBindingTemplate;
-        private readonly TableQuery _tableQuery;
+        private readonly BindingTemplate _filterBindingTemplate;
 
         public TableBinding(ScriptHostConfiguration config, TableBindingMetadata metadata, FileAccess access) 
             : base(config, metadata, access)
@@ -47,25 +45,20 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
                 _rowKeyBindingTemplate = BindingTemplate.FromString(RowKey);
             }
 
-            _tableQuery = new TableQuery
+            Filter = metadata.Filter;
+            if (!string.IsNullOrEmpty(Filter))
             {
-                TakeCount = metadata.Take ?? 50,
-                FilterString = metadata.Filter
-            };
+                _filterBindingTemplate = BindingTemplate.FromString(Filter);
+            }
+
+            Take = metadata.Take ?? 50;
         }
 
         public string TableName { get; private set; }
         public string PartitionKey { get; private set; }
         public string RowKey { get; private set; }
-
-        public override bool HasBindingParameters
-        {
-            get
-            {
-                return (_partitionKeyBindingTemplate != null && _partitionKeyBindingTemplate.ParameterNames.Any()) ||
-                       (_rowKeyBindingTemplate != null && _rowKeyBindingTemplate.ParameterNames.Any());
-            }
-        }
+        public int Take { get; private set; }
+        public string Filter { get; private set; }
 
         public override Collection<CustomAttributeBuilder> GetCustomAttributes()
         {
@@ -80,8 +73,16 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             }
             else
             {
-                constructorTypes = new Type[] { typeof(string), typeof(string), typeof(string) };
-                constructorArguments = new object[] { TableName, PartitionKey, RowKey };
+                if (!string.IsNullOrEmpty(PartitionKey) && !string.IsNullOrEmpty(RowKey))
+                {
+                    constructorTypes = new Type[] { typeof(string), typeof(string), typeof(string) };
+                    constructorArguments = new object[] { TableName, PartitionKey, RowKey };
+                }
+                else
+                {
+                    constructorTypes = new Type[] { typeof(string) };
+                    constructorArguments = new object[] { TableName };
+                }
             }
 
             attributes.Add(new CustomAttributeBuilder(typeof(TableAttribute).GetConstructor(constructorTypes), constructorArguments));
@@ -98,6 +99,7 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
         {
             string boundPartitionKey = PartitionKey;
             string boundRowKey = RowKey;
+            string boundFilter = Filter;
             if (context.BindingData != null)
             {
                 if (_partitionKeyBindingTemplate != null)
@@ -109,6 +111,11 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
                 {
                     boundRowKey = _rowKeyBindingTemplate.Bind(context.BindingData);
                 }
+
+                if (_filterBindingTemplate != null)
+                {
+                    boundFilter = _filterBindingTemplate.Bind(context.BindingData);
+                }
             }
 
             if (!string.IsNullOrEmpty(boundPartitionKey))
@@ -119,6 +126,11 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             if (!string.IsNullOrEmpty(boundRowKey))
             {
                 boundRowKey = Resolve(boundRowKey);
+            }
+
+            if (!string.IsNullOrEmpty(boundFilter))
+            {
+                boundFilter = Resolve(boundFilter);
             }
 
             Attribute[] additionalAttributes = null;
@@ -167,7 +179,6 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
             else
             {
                 string json = null;
-
                 if (!string.IsNullOrEmpty(boundPartitionKey) &&
                     !string.IsNullOrEmpty(boundRowKey))
                 {
@@ -181,11 +192,31 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
                 }
                 else
                 {
-                    // binding to entire table (query multiple table entities)
-                    RuntimeBindingContext runtimeContext = new RuntimeBindingContext(new TableAttribute(TableName, boundPartitionKey, boundRowKey), additionalAttributes);
+                    // binding to multiple table entities
+                    RuntimeBindingContext runtimeContext = new RuntimeBindingContext(new TableAttribute(TableName), additionalAttributes);
                     CloudTable table = await context.Binder.BindAsync<CloudTable>(runtimeContext);
-                    var entities = table.ExecuteQuery(_tableQuery);
 
+                    string finalQuery = boundFilter;
+                    if (!string.IsNullOrEmpty(boundPartitionKey))
+                    {
+                        var partitionKeyPredicate = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, boundPartitionKey);
+                        if (!string.IsNullOrEmpty(boundFilter))
+                        {
+                            finalQuery = TableQuery.CombineFilters(boundFilter, TableOperators.And, partitionKeyPredicate);
+                        }
+                        else
+                        {
+                            finalQuery = partitionKeyPredicate;
+                        }
+                    }
+
+                    TableQuery tableQuery = new TableQuery
+                    {
+                        TakeCount = Take,
+                        FilterString = finalQuery
+                    };
+
+                    var entities = table.ExecuteQuery(tableQuery);
                     JArray entityArray = new JArray();
                     foreach (var entity in entities)
                     {
@@ -208,11 +239,8 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
         private static JObject ConvertEntityToJObject(DynamicTableEntity tableEntity)
         {
-            OperationContext context = new OperationContext();
-            var entityProperties = tableEntity.WriteEntity(context);
-
             JObject jsonObject = new JObject();
-            foreach (var entityProperty in entityProperties)
+            foreach (var entityProperty in tableEntity.Properties)
             {
                 JValue value = null;
                 switch (entityProperty.Value.PropertyType)
@@ -245,6 +273,10 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
 
                 jsonObject.Add(entityProperty.Key, value);
             }
+
+            jsonObject.Add("PartitionKey", tableEntity.PartitionKey);
+            jsonObject.Add("RowKey", tableEntity.RowKey);
+
             return jsonObject;
         }
     }

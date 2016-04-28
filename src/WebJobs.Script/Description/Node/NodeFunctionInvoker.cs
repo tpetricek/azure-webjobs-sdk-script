@@ -124,11 +124,9 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             {
                 TraceWriter.Verbose(string.Format("Function started (Id={0})", invocationId));
 
-                var scriptExecutionContext = CreateScriptExecutionContext(input, traceWriter, TraceWriter, functionExecutionContext);
-
-                Dictionary<string, string> bindingData = GetBindingData(input, binder, _inputBindings, _outputBindings);
+                var scriptExecutionContext = CreateScriptExecutionContext(input, binder, traceWriter, TraceWriter, functionExecutionContext);
+                var bindingData = (Dictionary<string, string>)scriptExecutionContext["bindingData"];
                 bindingData["InvocationId"] = invocationId;
-                scriptExecutionContext["bindingData"] = bindingData;
 
                 await ProcessInputBindingsAsync(binder, scriptExecutionContext, bindingData);
 
@@ -179,9 +177,8 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                     stringValue = sr.ReadToEnd();
                 }
 
-                // if the input is json, try converting to an object
-                object convertedValue = stringValue;
-                convertedValue = TryConvertJsonToObject(stringValue);
+                // if the input is json, try converting to an object or array
+                object convertedValue = TryConvertJson(stringValue);
 
                 bindings.Add(inputBinding.Metadata.Name, convertedValue);
                 inputs.Add(convertedValue);
@@ -268,7 +265,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             }
         }
 
-        private Dictionary<string, object> CreateScriptExecutionContext(object input, TraceWriter traceWriter, TraceWriter fileTraceWriter, ExecutionContext functionExecutionContext)
+        private Dictionary<string, object> CreateScriptExecutionContext(object input, IBinderEx binder, TraceWriter traceWriter, TraceWriter fileTraceWriter, ExecutionContext functionExecutionContext)
         {
             // create a TraceWriter wrapper that can be exposed to Node.js
             var log = (Func<object, Task<object>>)(p =>
@@ -302,12 +299,24 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 { "bind", bind }
             };
 
+            // This is the input value that we will use to extract binding data.
+            // Since binding data extraction is based on JSON parsing, in the
+            // various conversions below, we set this to the appropriate JSON
+            // string when possible.
+            object bindDataInput = input;
+
             if (input is HttpRequestMessage)
             {
                 // convert the request to a json object
                 HttpRequestMessage request = (HttpRequestMessage)input;
-                var requestObject = CreateRequestObject(request);
+                string rawBody = null;
+                var requestObject = CreateRequestObject(request, out rawBody);
                 input = requestObject;
+
+                if (rawBody != null)
+                {
+                    bindDataInput = rawBody;
+                }
 
                 // If this is a WebHook function, the input should be the
                 // request body
@@ -341,7 +350,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 Stream inputStream = (Stream)input;
                 using (StreamReader sr = new StreamReader(inputStream))
                 {
-                    input = sr.ReadToEnd();
+                    bindDataInput = input = sr.ReadToEnd();
                 }
             }
             else
@@ -350,10 +359,12 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 // that we can't convert properly
             }
 
+            context["bindingData"] = GetBindingData(bindDataInput, binder);
+
             if (input is string)
             {
-                // if the input is json, try converting to an object
-                input = TryConvertJsonToObject((string)input);
+                // if the input is json, try converting to an object or array
+                input = TryConvertJson((string)input);
             }
 
             bindings.Add(_trigger.Name, input);
@@ -361,27 +372,15 @@ namespace Microsoft.Azure.WebJobs.Script.Description
             return context;
         }
 
-        private object TryConvertJsonToObject(string input)
+        private Dictionary<string, object> CreateRequestObject(HttpRequestMessage request, out string rawBody)
         {
-            object result = input;
+            rawBody = null;
 
-            // if the input is json, try converting to an object
-            Dictionary<string, object> jsonObject;
-            if (TryDeserializeJsonObject(input, out jsonObject))
-            {
-                result = jsonObject;
-            }
-
-            return result;
-        }
-
-        private Dictionary<string, object> CreateRequestObject(HttpRequestMessage request)
-        {
             // TODO: need to provide access to remaining request properties
-            Dictionary<string, object> inputDictionary = new Dictionary<string, object>();
-            inputDictionary["originalUrl"] = request.RequestUri.ToString();
-            inputDictionary["method"] = request.Method.ToString().ToUpperInvariant();
-            inputDictionary["query"] = request.GetQueryNameValuePairs().ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, object> requestObject = new Dictionary<string, object>();
+            requestObject["originalUrl"] = request.RequestUri.ToString();
+            requestObject["method"] = request.Method.ToString().ToUpperInvariant();
+            requestObject["query"] = request.GetQueryNameValuePairs().ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
 
             Dictionary<string, string> headers = new Dictionary<string, string>();
             foreach (var header in request.Headers)
@@ -390,41 +389,59 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 // as does Node.js request object
                 headers.Add(header.Key.ToLowerInvariant(), header.Value.First());
             }
-            inputDictionary["headers"] = headers;
+            requestObject["headers"] = headers;
 
             // if the request includes a body, add it to the request object 
             if (request.Content != null && request.Content.Headers.ContentLength > 0)
             {
                 string body = request.Content.ReadAsStringAsync().Result;
+                rawBody = body;
                 MediaTypeHeaderValue contentType = request.Content.Headers.ContentType;
                 Dictionary<string, object> jsonObject;
                 if (contentType != null && contentType.MediaType == "application/json" &&
-                    TryDeserializeJsonObject(body, out jsonObject))
+                    TryDeserializeJson(body, out jsonObject))
                 {
                     // if the content - type of the request is json, deserialize into an object
-                    inputDictionary["body"] = jsonObject;
+                    requestObject["body"] = jsonObject;
                 }
                 else
                 {
-                    inputDictionary["body"] = body;
+                    requestObject["body"] = body;
                 }
             }
 
-            return inputDictionary;
+            return requestObject;
         }
 
-        private bool TryDeserializeJsonObject(string json, out Dictionary<string, object> result)
+        private object TryConvertJson(string input)
         {
-            result = null;
+            object result = input;
 
-            if (!Utility.IsJson(json))
+            if (Utility.IsJson(input))
             {
-                return false;
+                // if the input is json, try converting to an object or array
+                Dictionary<string, object> jsonObject;
+                Dictionary<string, object>[] jsonObjectArray;
+                if (TryDeserializeJson(input, out jsonObject))
+                {
+                    result = jsonObject;
+                }
+                else if (TryDeserializeJson(input, out jsonObjectArray))
+                {
+                    result = jsonObjectArray;
+                }
             }
+
+            return result;
+        }
+
+        private bool TryDeserializeJson<TResult>(string json, out TResult result)
+        {
+            result = default(TResult);
 
             try
             {
-                result = JsonConvert.DeserializeObject<Dictionary<string, object>>(json, _dictionaryJsonConverter);
+                result = JsonConvert.DeserializeObject<TResult>(json, _dictionaryJsonConverter);
                 return true;
             }
             catch

@@ -122,7 +122,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
             try
             {
-                TraceWriter.Verbose(string.Format("Function started (Id={0})", invocationId));
+                TraceWriter.Info(string.Format("Function started (Id={0})", invocationId));
 
                 var scriptExecutionContext = CreateScriptExecutionContext(input, binder, traceWriter, TraceWriter, functionExecutionContext);
                 var bindingData = (Dictionary<string, string>)scriptExecutionContext["bindingData"];
@@ -134,12 +134,12 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
                 await ProcessOutputBindingsAsync(_outputBindings, input, binder, bindingData, scriptExecutionContext, functionResult);
 
-                TraceWriter.Verbose(string.Format("Function completed (Success, Id={0})", invocationId));
+                TraceWriter.Info(string.Format("Function completed (Success, Id={0})", invocationId));
             }
             catch
             {
                 startedEvent.Success = false;
-                TraceWriter.Verbose(string.Format("Function completed (Failure, Id={0})", invocationId));
+                TraceWriter.Error(string.Format("Function completed (Failure, Id={0})", invocationId));
                 throw;
             }
             finally
@@ -261,7 +261,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 // clear the node module cache
                 ClearRequireCacheFunc(null).Wait();
 
-                TraceWriter.Verbose(string.Format(CultureInfo.InvariantCulture, "Script for function '{0}' changed. Reloading.", Metadata.Name));
+                TraceWriter.Info(string.Format(CultureInfo.InvariantCulture, "Script for function '{0}' changed. Reloading.", Metadata.Name));
             }
         }
 
@@ -273,8 +273,8 @@ namespace Microsoft.Azure.WebJobs.Script.Description
                 string text = p as string;
                 if (text != null)
                 {
-                    traceWriter.Verbose(text);
-                    fileTraceWriter.Verbose(text);
+                    traceWriter.Info(text);
+                    fileTraceWriter.Info(text);
                 } 
 
                 return Task.FromResult<object>(null);
@@ -315,6 +315,7 @@ namespace Microsoft.Azure.WebJobs.Script.Description
 
                 if (rawBody != null)
                 {
+                    requestObject["rawBody"] = rawBody;
                     bindDataInput = rawBody;
                 }
 

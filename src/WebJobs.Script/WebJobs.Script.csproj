@@ -14,6 +14,7 @@
     <TargetFrameworkProfile />
     <RunCodeAnalysis>true</RunCodeAnalysis>
     <CodeAnalysisRuleSet>..\src.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisCulture>en-US</CodeAnalysisCulture>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <StyleCopTreatErrorsAsWarnings>false</StyleCopTreatErrorsAsWarnings>
     <NuGetPackageImportStamp>
@@ -42,14 +43,6 @@
     </DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Autofac, Version=3.5.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Autofac.3.5.2\lib\net40\Autofac.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Autofac.Integration.WebApi, Version=3.4.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Autofac.WebApi2.3.4.0\lib\net45\Autofac.Integration.WebApi.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="EdgeJs, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Edge.js.5.9.1\lib\EdgeJs.dll</HintPath>
       <Private>True</Private>
@@ -60,14 +53,6 @@
     </Reference>
     <Reference Include="FSharp.Core, Version=4.4.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\..\packages\FSharp.Core.4.0.0.1\lib\net40\FSharp.Core.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.AspNet.WebHooks.Common, Version=1.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.AspNet.WebHooks.Common.1.2.0-rc1\lib\net45\Microsoft.AspNet.WebHooks.Common.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Microsoft.AspNet.WebHooks.Receivers, Version=1.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.AspNet.WebHooks.Receivers.1.2.0-beta6\lib\net45\Microsoft.AspNet.WebHooks.Receivers.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.ApiHub.Sdk, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -83,43 +68,43 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.WebJobs, Version=1.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Core.1.2.0-alpha-10291\lib\net45\Microsoft.Azure.WebJobs.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Core.1.2.0-alpha-10306\lib\net45\Microsoft.Azure.WebJobs.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.WebJobs.Extensions, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.1.1.0-alpha-10279\lib\net45\Microsoft.Azure.WebJobs.Extensions.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.1.1.0-alpha-10287\lib\net45\Microsoft.Azure.WebJobs.Extensions.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.WebJobs.Extensions.ApiHub, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.ApiHub.1.0.0-alpha-10279\lib\net45\Microsoft.Azure.WebJobs.Extensions.ApiHub.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.ApiHub.1.0.0-alpha-10287\lib\net45\Microsoft.Azure.WebJobs.Extensions.ApiHub.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.WebJobs.Extensions.DocumentDB, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.DocumentDB.1.0.0-alpha-10279\lib\net45\Microsoft.Azure.WebJobs.Extensions.DocumentDB.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.DocumentDB.1.0.0-alpha-10287\lib\net45\Microsoft.Azure.WebJobs.Extensions.DocumentDB.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.WebJobs.Extensions.MobileApps, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.MobileApps.1.0.0-alpha-10279\lib\net45\Microsoft.Azure.WebJobs.Extensions.MobileApps.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.MobileApps.1.0.0-alpha-10287\lib\net45\Microsoft.Azure.WebJobs.Extensions.MobileApps.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.WebJobs.Extensions.NotificationHubs, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.NotificationHubs.1.0.0-alpha-10279\lib\net45\Microsoft.Azure.WebJobs.Extensions.NotificationHubs.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.NotificationHubs.1.0.0-alpha-10287\lib\net45\Microsoft.Azure.WebJobs.Extensions.NotificationHubs.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.WebJobs.Extensions.SendGrid, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.SendGrid.1.1.0-alpha-10279\lib\net45\Microsoft.Azure.WebJobs.Extensions.SendGrid.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Extensions.SendGrid.1.1.0-alpha-10287\lib\net45\Microsoft.Azure.WebJobs.Extensions.SendGrid.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.WebJobs.Host, Version=1.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.1.2.0-alpha-10291\lib\net45\Microsoft.Azure.WebJobs.Host.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.1.2.0-alpha-10306\lib\net45\Microsoft.Azure.WebJobs.Host.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.WebJobs.Logging, Version=1.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Logging.1.2.0-alpha-10291\lib\net45\Microsoft.Azure.WebJobs.Logging.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.Logging.1.2.0-alpha-10306\lib\net45\Microsoft.Azure.WebJobs.Logging.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Azure.WebJobs.ServiceBus, Version=1.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.ServiceBus.1.2.0-alpha-10291\lib\net45\Microsoft.Azure.WebJobs.ServiceBus.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Azure.WebJobs.ServiceBus.1.2.0-alpha-10306\lib\net45\Microsoft.Azure.WebJobs.ServiceBus.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.ServiceBus.Messaging.EventProcessorHost, Version=0.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">

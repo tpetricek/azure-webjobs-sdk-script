@@ -25,7 +25,7 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
         {
         }
 
-        public override Collection<CustomAttributeBuilder> GetCustomAttributes()
+        public override Collection<CustomAttributeBuilder> GetCustomAttributes(Type parameterType)
         {
             return null;
         }
@@ -109,9 +109,13 @@ namespace Microsoft.Azure.WebJobs.Script.Binding
                 return;
             }
 
-            HttpRequestMessage request;
-
-            if (!functionArguments.TryGetValue(triggerInputName, out request))
+            HttpRequestMessage request = null;
+            object argValue = null;
+            if (functionArguments.TryGetValue(triggerInputName, out argValue) && argValue is HttpRequestMessage)
+            {
+                request = (HttpRequestMessage)argValue;
+            }
+            else
             {
                 // No argument is bound to the request message, so we should have 
                 // it in the system arguments
